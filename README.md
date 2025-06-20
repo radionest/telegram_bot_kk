@@ -1,6 +1,6 @@
-# Telegram Gemini Bot
+# Telegram AI Bot
 
-Телеграм бот для анализа сообщений в группах с помощью Google Gemini AI.
+Телеграм бот для анализа сообщений в группах с помощью AI (Google Gemini и Groq).
 
 ## Функциональность
 
@@ -20,6 +20,9 @@
    - `GEMINI_API_KEY` - API ключ от Google AI Studio
    - `GROUP_CHAT_ID` - ID группы для модерации по умолчанию
    - `SUPERUSER_ID` (опционально) - ID пользователя с правами администратора бота
+   - `MIN_MESSAGE_LENGTH` (опционально) - минимальная длина сообщения для анализа
+   - `REACTION_EMOJI` (опционально) - эмодзи для реакций
+   - `VIOLATION_TIME_WINDOW` (опционально) - временное окно для отслеживания нарушений
 
 ## Настройка бота в Telegram
 
@@ -38,24 +41,42 @@ pdm run python src/main.py
 ```
 .
 ├── src/
-│   ├── main.py                  # Точка входа приложения
+│   ├── main.py                      # Точка входа приложения
 │   ├── config/
-│   │   └── settings.py          # Настройки и переменные окружения
-│   ├── handlers/
-│   │   └── message_handlers.py  # Обработчики сообщений
+│   │   └── settings.py              # Настройки и переменные окружения
+│   ├── routers/
+│   │   ├── admin.py                 # Обработчики административных команд
+│   │   ├── message_handlers.py      # Обработчики сообщений в группах
+│   │   └── private.py               # Обработчики личных сообщений
 │   ├── models/
-│   │   └── analysis.py          # Модели данных
-│   ├── services/                # Бизнес-логика
-│   ├── states/                  # FSM состояния
-│   │   └── group_selection.py   # Состояния для выбора группы
+│   │   ├── analysis.py              # Модели данных для анализа
+│   │   ├── base_topic_storage.py    # Базовый класс для хранения топиков
+│   │   └── message_history.py       # Модель истории сообщений
+│   ├── services/                    # Бизнес-логика
+│   │   ├── ai_client.py             # Базовый клиент для AI
+│   │   ├── chat_manager.py          # Управление чатами
+│   │   ├── group_tracker.py         # Отслеживание групп
+│   │   ├── memory_topic_storage.py  # Хранение топиков в памяти
+│   │   ├── message_history_storage.py # Хранение истории сообщений
+│   │   └── response_manager.py      # Управление ответами
+│   ├── middlewares/                 # Промежуточные обработчики
+│   │   ├── message_history_middleware.py # История сообщений
+│   │   └── topic_update_middleware.py    # Обновление топиков
+│   ├── filters/                     # Фильтры сообщений
+│   │   ├── base.py                  # Базовые фильтры
+│   │   └── chat_filters.py          # Фильтры для чатов
+│   ├── states/                      # FSM состояния
 │   └── utils/
-│       ├── gemini_client.py     # Клиент для работы с Gemini API
-│       ├── logger.py            # Конфигурация логирования
-│       └── message_analyzer.py  # Логика анализа сообщений
+│       ├── gemini_client.py         # Клиент для работы с Gemini API
+│       ├── groq_client.py           # Клиент для работы с Groq API
+│       ├── group_selection.py       # Утилиты для выбора группы
+│       └── logger.py                # Конфигурация логирования
+├── data/                        # Директория для данных (создается автоматически)
 ├── logs/                        # Директория для логов (создается автоматически)
 ├── .env.example                 # Пример файла с переменными окружения
 ├── .gitignore
 ├── CLAUDE.md                    # Руководство по стилю кода
+├── install.sh                   # Скрипт установки
 └── pyproject.toml               # Конфигурация проекта и зависимости
 ```
 
@@ -77,33 +98,23 @@ pdm run python src/main.py
 
 ### Установка зависимостей для разработки
 ```bash
-make install-dev
-# или
-pdm install
+pdm install --dev
 ```
 
 ### Проверка кода
 ```bash
 # Форматирование кода
-make format
+pdm run ruff format src/
 
 # Проверка линтером
-make lint
+pdm run ruff check src/
 
 # Проверка типов
-make type-check
-
-# Все проверки сразу
-make check
+pdm run mypy src/
 ```
 
 ### Pre-commit хуки
 Для автоматической проверки кода перед коммитом:
 ```bash
 pdm run pre-commit install
-```
-
-### Доступные команды
-```bash
-make help  # Показать все доступные команды
 ```
