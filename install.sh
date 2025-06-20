@@ -12,11 +12,11 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 # Конфигурация
-BOT_USER="telegram-bot"
+BOT_USER="telegram-bot-kk"
 BOT_HOME="/home/$BOT_USER"
-BOT_DIR="$BOT_HOME/telegram_kk"
-GITHUB_REPO="https://github.com/YOUR_USERNAME/telegram_kk.git"
-SERVICE_NAME="telegram-bot"
+BOT_DIR="$BOT_HOME/telegram_bot_kk"
+GITHUB_REPO="git@github.com:radionest/telegram_bot_kk.git"
+SERVICE_NAME="telegram-bot-kk"
 PYTHON_VERSION="3.12"
 
 # Функция для вывода сообщений
@@ -105,7 +105,7 @@ if [ -d "$BOT_DIR" ]; then
     warning "Директория $BOT_DIR уже существует. Обновляем код..."
     sudo -u "$BOT_USER" bash -c "cd $BOT_DIR && git pull"
 else
-    sudo -u "$BOT_USER" bash -c "cd $BOT_HOME && git clone $GITHUB_REPO"
+    sudo -u "$BOT_USER" bash -c "cd $BOT_HOME && git clone $GITHUB_REPO telegram_bot_kk"
 fi
 
 # Создание виртуального окружения и установка зависимостей
@@ -150,7 +150,7 @@ fi
 log "Создание systemd сервиса..."
 cat > "/etc/systemd/system/$SERVICE_NAME.service" << EOL
 [Unit]
-Description=Telegram Bot Service
+Description=Telegram Bot KK Service
 After=network.target
 
 [Service]
@@ -187,7 +187,7 @@ log "Создание скрипта управления..."
 cat > "/usr/local/bin/$SERVICE_NAME" << 'EOL'
 #!/bin/bash
 
-SERVICE="telegram-bot"
+SERVICE="telegram-bot-kk"
 
 case "$1" in
     start)
@@ -219,9 +219,9 @@ case "$1" in
     update)
         echo "Обновление $SERVICE..."
         systemctl stop $SERVICE
-        cd /home/telegram-bot/telegram_kk
-        sudo -u telegram-bot git pull
-        sudo -u telegram-bot bash -c "source venv/bin/activate && pip install -e ."
+        cd /home/telegram-bot-kk/telegram_bot_kk
+        sudo -u telegram-bot-kk git pull
+        sudo -u telegram-bot-kk bash -c "source venv/bin/activate && pip install -e ."
         systemctl start $SERVICE
         echo "Обновление завершено!"
         ;;
