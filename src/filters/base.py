@@ -84,4 +84,4 @@ async def should_bot_random_reply(message: Message, bot: Bot) -> bool:
     if not message.text:
         return False
         
-    return (len(message.text) > 20) and (random.random() > 0.03)
+    return (len(message.text) > 20) and (random.random() < settings.RANDOM_REPLY_PROBABILITY)

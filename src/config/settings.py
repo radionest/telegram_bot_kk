@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     RESET_ON_TOPIC_MOVE: bool = True
     MIN_MESSAGE_LENGTH: int = 10
     REACTION_EMOJI: str = "👾"
+    RANDOM_REPLY_PROBABILITY: float = 0.03
     
     # Static configuration - topics and reaction levels
     @property
