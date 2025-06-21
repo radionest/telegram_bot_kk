@@ -48,8 +48,8 @@ async def handle_group_selection(
 
     Args:
         callback: Callback query
-        state: FSM context
         group_tracker: Group tracker instance
+        chat_manager: Chat manager instance
     """
     if not callback.data:
         await callback.answer()
@@ -103,6 +103,7 @@ async def topics_command(message: Message, chat_manager: ChatManager) -> None:
 
     Args:
         message: Telegram message object
+        chat_manager: Chat manager instance
     """
 
     logger.info(f"Command /topics from user {message.from_user.id}")

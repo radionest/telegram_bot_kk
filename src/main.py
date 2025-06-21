@@ -25,7 +25,11 @@ from utils.logger import logger
 
 
 async def main() -> None:
-    """Initialize and run the bot."""
+    """Initialize and run the bot.
+    
+    Raises:
+        Exception: If bot initialization fails
+    """
     logger.info("Initializing bot...")
 
     bot = Bot(
@@ -91,7 +95,11 @@ async def main() -> None:
 
 
 def run() -> NoReturn:
-    """Run the bot with proper error handling."""
+    """Run the bot with proper error handling.
+    
+    Raises:
+        SystemExit: On critical errors or configuration issues
+    """
     try:
         asyncio.run(main())
     except KeyboardInterrupt:

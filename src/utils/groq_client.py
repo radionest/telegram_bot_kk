@@ -19,7 +19,16 @@ if TYPE_CHECKING:
 
 
 class GroqClient(AiClient):
-    """Client for interacting with Groq's API."""
+    """Client for interacting with Groq's API.
+    
+    This client provides methods for analyzing messages using Groq's language models,
+    including topic compliance analysis and free-form response generation.
+    
+    Attributes:
+        client: The Groq API client instance
+        model_name: The name of the Groq model to use
+        message_history_storage: Optional storage for maintaining conversation history
+    """
 
     def __init__(self, model_name: str = "llama-3.3-70b-versatile", message_history_storage: Optional["MessageHistoryStorage"] = None) -> None:
         """Initialize Groq client.
@@ -215,6 +224,7 @@ class GroqClient(AiClient):
         Args:
             message: The user's message
             chat_id: The chat ID for context
+            topic_id: Optional topic ID for conversation context
             
         Returns:
             Generated response

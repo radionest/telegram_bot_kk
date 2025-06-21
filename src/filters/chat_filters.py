@@ -17,6 +17,6 @@ def is_target_group(msg: Message, chat_manager: ChatManager) -> bool:
         chat_manager: ChatManager instance (for compatibility)
         
     Returns:
-        True if message is from target group, False otherwise
+        bool: True if message is from target group, False otherwise
     """
     return msg.chat.id == chat_manager.target_group_chat_id

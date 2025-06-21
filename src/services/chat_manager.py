@@ -59,6 +59,11 @@ class ChatManager:
 
     @property
     def existing_topics_by_id(self) -> Dict[int, TopicInfo]:
+        """Get existing topics indexed by topic ID.
+        
+        Returns:
+            Dictionary mapping topic IDs to TopicInfo objects
+        """
         return {topic.topic_id: topic for topic in self.existing_topics.values()}
 
     async def set_target_group_chat_id(self, group_chat_id: int) -> None:
@@ -122,6 +127,14 @@ class ChatManager:
         return True
 
     async def check_topic_by_id(self, topic_id: int) -> Optional[TopicInfo]:
+        """Check if a topic exists by sending a test message.
+        
+        Args:
+            topic_id: The topic ID to check
+            
+        Returns:
+            TopicInfo if topic exists and is open, None otherwise
+        """
         if not self.target_group_chat_id:
             return None
 
@@ -160,7 +173,14 @@ class ChatManager:
         return topic_info
 
     async def update_existing_topics(self) -> None:
-        """Определяет открытые топики в группе путем отправки тестовых сообщений.
+        """Update existing topics by probing with test messages.
+        
+        Sends test messages to potential topic IDs to determine which topics
+        exist and are open in the target group.
+        
+        Returns:
+            None
+        """
 
         Returns:
             Словарь открытых топиков {topic_id: TopicInfo}

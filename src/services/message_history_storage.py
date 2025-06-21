@@ -103,7 +103,15 @@ class InMemoryMessageHistoryStorage(MessageHistoryStorage):
         return total_deleted
     
     def get_storage_stats(self) -> Dict[str, int]:
-        """Получить статистику хранилища."""
+        """Get storage statistics.
+        
+        Returns:
+            Dictionary with statistics:
+            - total_messages: Total number of messages
+            - total_topics: Total number of topics
+            - total_chats: Total number of chats
+            - max_messages_per_topic: Maximum messages per topic
+        """
         total_topics = len(self._topic_messages)
         total_messages = sum(len(msgs) for msgs in self._topic_messages.values())
         total_chats = len(self._all_messages)

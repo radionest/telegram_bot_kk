@@ -45,7 +45,12 @@ class TopicUpdateMiddleware(BaseMiddleware):
         return await handler(event, data)
     
     async def _update_topic_info(self, message: Message, storage: MemoryTopicStorage) -> None:
-        """Обновляет информацию о топике из сообщения."""
+        """Update topic information from message.
+        
+        Args:
+            message: The message containing topic information
+            storage: Topic storage instance
+        """
         
         group_id = message.chat.id
         group_title = message.chat.title or f"Group {group_id}"
@@ -68,7 +73,13 @@ class TopicUpdateMiddleware(BaseMiddleware):
         group_title: str, 
         storage: MemoryTopicStorage
     ) -> None:
-        """Обновляет информацию о general topic."""
+        """Update general topic information.
+        
+        Args:
+            group_id: The group ID
+            group_title: The group title
+            storage: Topic storage instance
+        """
         
         # Проверяем, существует ли уже general topic
         if not await storage.topic_exists(group_id, None):
@@ -100,7 +111,15 @@ class TopicUpdateMiddleware(BaseMiddleware):
         message: Message,
         storage: MemoryTopicStorage
     ) -> None:
-        """Обновляет информацию о конкретном топике."""
+        """Update specific topic information.
+        
+        Args:
+            group_id: The group ID
+            group_title: The group title
+            topic_id: The topic ID
+            message: The message containing topic information
+            storage: Topic storage instance
+        """
         
         # Проверяем, существует ли топик
         if not await storage.topic_exists(group_id, topic_id):

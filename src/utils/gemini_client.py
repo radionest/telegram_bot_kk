@@ -22,7 +22,16 @@ if TYPE_CHECKING:
 
 
 class GeminiClient(AiClient):
-    """Client for interacting with Google's Gemini API."""
+    """Client for interacting with Google's Gemini API.
+    
+    This client provides methods for analyzing messages using Google's Gemini models,
+    including topic compliance analysis and free-form response generation.
+    
+    Attributes:
+        client: The Gemini API client instance
+        model_name: The name of the Gemini model to use
+        message_history_storage: Optional storage for maintaining conversation history
+    """
 
     def __init__(self, model_name: str = "gemini-2.0-flash-001", message_history_storage: Optional["MessageHistoryStorage"] = None) -> None:
         """Initialize Gemini client.
@@ -211,6 +220,7 @@ class GeminiClient(AiClient):
         Args:
             message: The user's message
             chat_id: The chat ID for context
+            topic_id: Optional topic ID for conversation context
             
         Returns:
             Generated response

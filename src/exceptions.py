@@ -43,4 +43,9 @@ class APIError(Exception):
         
 
 class ChatManagerError(Exception):
+    """Exception raised for chat management errors.
+    
+    This exception is raised when errors occur during chat management operations
+    such as setting up topics, managing permissions, or handling chat-related operations.
+    """
     ...

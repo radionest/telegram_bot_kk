@@ -6,11 +6,20 @@ from models.base_topic_storage import BaseTopicStorage, TopicInfo, GroupTopicsIn
 
 
 class MemoryTopicStorage(BaseTopicStorage):
-    """Реализация хранилища топиков в памяти."""
+    """In-memory implementation of topic storage.
+    
+    Stores topic information in memory using nested dictionaries.
+    Structure: {group_id: {topic_id: TopicInfo}}
+    """
     
     def __init__(self):
-        # Структура: {group_id: {topic_id: TopicInfo}}
-        # Для general topic используется ключ None
+        """Initialize memory topic storage.
+        
+        Creates an empty storage dictionary where:
+        - Outer key is group_id
+        - Inner key is topic_id (None for general topic)
+        - Value is TopicInfo object
+        """
         self._storage: Dict[int, Dict[Optional[int], TopicInfo]] = {}
         
     async def add_topic(self, topic_info: TopicInfo) -> bool:
@@ -193,5 +202,13 @@ class MemoryTopicStorage(BaseTopicStorage):
         return total
     
     def _get_topic_key(self, group_id: int, topic_id: Optional[int]) -> Tuple[int, Optional[int]]:
-        """Вспомогательный метод для получения ключа топика."""
+        """Helper method to get topic key.
+        
+        Args:
+            group_id: The group ID
+            topic_id: The topic ID (None for general topic)
+            
+        Returns:
+            Tuple of (group_id, topic_id) used as key
+        """
         return (group_id, topic_id)

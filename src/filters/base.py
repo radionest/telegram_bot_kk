@@ -7,6 +7,14 @@ from config.settings import settings
 
 
 def is_superadmin(msg: Message):
+    """Check if the message sender is the superadmin.
+    
+    Args:
+        msg: The message to check
+        
+    Returns:
+        True if the sender is the superadmin, False otherwise
+    """
     return msg.from_user.id == settings.SUPERUSER_ID  # type: ignore
 
 
