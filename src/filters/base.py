@@ -1,4 +1,5 @@
 """Base custom filters."""
+import random
 
 from aiogram import Bot
 from aiogram.types import Message
@@ -67,3 +68,20 @@ async def is_bot_mentioned(message: Message, bot: Bot) -> bool:
     # Check if bot's username is mentioned in the message
     bot_mention = f"@{bot_info.username}"
     return bot_mention.lower() in message.text.lower()
+
+
+
+async def should_bot_random_reply(message: Message, bot: Bot) -> bool:
+    """Check if bot should randomly reply to a message.
+    
+    Args:
+        message: Message to check
+        bot: Bot instance
+        
+    Returns:
+        True if message is longer than 20 characters and random check passes (3% chance)
+    """
+    if not message.text:
+        return False
+        
+    return len(message.text) > 20 and random.random() > 0.03

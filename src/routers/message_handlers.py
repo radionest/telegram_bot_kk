@@ -5,7 +5,7 @@ from aiogram.filters import invert_f
 from aiogram.types import Message
 
 from filters.chat_filters import is_target_group
-from filters.base import should_analyze_message, is_bot_mentioned
+from filters.base import should_analyze_message, is_bot_mentioned, should_bot_random_reply
 from services.chat_manager import ChatManager
 from services.response_manager import ResponseManager
 from services.group_tracker import GroupTracker
@@ -17,7 +17,8 @@ router = Router()
 router.message.filter(F.chat.type.in_(["group", "supergroup"]))
 
 
-@router.message(is_bot_mentioned, is_target_group)
+@router.message(is_target_group, should_bot_random_reply)
+@router.message(is_target_group, is_bot_mentioned)
 async def handle_bot_mention(
     message: Message, chat_manager: ChatManager, bot: Bot
 ) -> None:
@@ -54,7 +55,6 @@ async def handle_bot_mention(
     except Exception as e:
         logger.error(f"Error handling bot mention: {e}")
         await message.reply("Извините, произошла ошибка при обработке вашего сообщения.")
-
 
 @router.message(should_analyze_message, is_target_group)
 async def handle_group_message(
