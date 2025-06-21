@@ -181,10 +181,7 @@ class ChatManager:
         Returns:
             None
         """
-
-        Returns:
-            Словарь открытых топиков {topic_id: TopicInfo}
-        """
+        
         self.existing_topics = {}
         if not self.target_group_chat_id:
             logger.error("Target group chat ID not set")
@@ -276,10 +273,12 @@ class ChatManager:
         logger.info(f"Reset violation counter for topic {topic_name}")
 
     @overload
-    def add_topic(self, *, topic_id: int, name: str, description: str) -> None: ...
+    def add_topic(self, *, topic_id: int, name: str, description: str) -> None: 
+        ...
 
     @overload
-    def add_topic(self, *, topic_info: TopicInfo) -> None: ...
+    def add_topic(self, *, topic_info: TopicInfo) -> None: 
+        ...
 
     def add_topic(
         self,

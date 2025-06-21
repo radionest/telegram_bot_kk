@@ -56,6 +56,7 @@ async def handle_bot_mention(
         logger.error(f"Error handling bot mention: {e}")
         await message.reply("Извините, произошла ошибка при обработке вашего сообщения.")
 
+
 @router.message(should_analyze_message, is_target_group)
 async def handle_group_message(
     message: Message, chat_manager: ChatManager, response_manager: ResponseManager
