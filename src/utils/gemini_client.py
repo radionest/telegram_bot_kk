@@ -3,8 +3,8 @@
 import json
 from typing import TYPE_CHECKING, List, Optional
 
-import google.generativeai as genai
-from aiogram.types import Message
+from google import genai
+from google.genai import types
 
 from config.settings import settings
 from models.analysis import (
@@ -18,23 +18,35 @@ from exceptions import APIError
 if TYPE_CHECKING:
     from src.services.message_history_storage import MessageHistoryStorage
 
-genai.configure(api_key=settings.GEMINI_API_KEY)
+# Client initialization moved to __init__ method
 
 
 class GeminiClient(AiClient):
     """Client for interacting with Google's Gemini API."""
 
-    def __init__(self, model_name: str = "gemini-2.0-flash-lite", message_history_storage: Optional["MessageHistoryStorage"] = None) -> None:
+    def __init__(self, model_name: str = "gemini-2.0-flash-001", message_history_storage: Optional["MessageHistoryStorage"] = None) -> None:
         """Initialize Gemini client.
 
         Args:
             model_name: The Gemini model to use
             message_history_storage: Storage for message history
         """
-        self.model = genai.GenerativeModel(model_name)
+        # Configure proxy if provided
+        if settings.HTTP_PROXY or settings.HTTPS_PROXY:
+            proxy_url = settings.HTTPS_PROXY or settings.HTTP_PROXY
+            http_options = types.HttpOptions(
+                client_args={'proxy': proxy_url},
+                async_client_args={'proxy': proxy_url}
+            )
+            self.client = genai.Client(api_key=settings.GEMINI_API_KEY, http_options=http_options)
+            logger.info(f"Initialized Gemini client with proxy: {proxy_url}")
+        else:
+            self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
+            logger.info("Initialized Gemini client without proxy")
+            
         self.model_name = model_name
         self.message_history_storage = message_history_storage
-        logger.info(f"Initialized Gemini client with model: {model_name}")
+        logger.info(f"Using model: {model_name}")
 
     def _clean_json_from_response(self, response_text: str) -> str:
         """Parse JSON from response, removing markdown formatting if present.
@@ -157,7 +169,10 @@ class GeminiClient(AiClient):
         logger.debug(
             f"Analyzing topic compliance for message in topic '{request.current_topic}'"
         )
-        response = self.model.generate_content(prompt)
+        response = self.client.models.generate_content(
+            model=self.model_name,
+            contents=prompt
+        )
 
         if not response.text:
             logger.error(

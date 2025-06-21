@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     
     # Gemini configuration
     GEMINI_API_KEY: str
-    GEMINI_MODEL: str = "gemma-3n-e4b-it"
+    GEMINI_MODEL: str = "gemini-2.0-flash-001"
     
     # Groq configuration
     GROQ_API_KEY: str = ""
@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     
     # AI provider selection
     AI_PROVIDER: str = "gemini"  # "gemini" or "groq"
+    
+    # Proxy configuration (optional)
+    HTTP_PROXY: str = ""
+    HTTPS_PROXY: str = ""
     
     # Optional configuration with defaults
     VIOLATION_TIME_WINDOW: int = 60
