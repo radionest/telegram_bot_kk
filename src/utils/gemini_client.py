@@ -202,3 +202,68 @@ class GeminiClient(AiClient):
                 confidence=0.0,
                 reason="Ошибка анализа - принято как подходящее",
             )
+    
+    async def generate_free_response(
+        self, message: str, chat_id: int, topic_id: Optional[int] = None
+    ) -> str:
+        """Generate a free-form response to a message.
+        
+        Args:
+            message: The user's message
+            chat_id: The chat ID for context
+            
+        Returns:
+            Generated response
+        """
+        try:
+            # Get message history for context
+            history_messages = []
+            if self.message_history_storage:
+                history_messages = await self.message_history_storage.get_topic_messages(
+                    chat_id=chat_id,
+                    topic_id=topic_id,
+                    limit=10
+                )
+            
+            # Build context from history
+            context_parts = []
+            for msg in reversed(history_messages):
+                username = msg.from_user.username if msg.from_user else "Неизвестный"
+                text = msg.text or "[медиа]"
+                context_parts.append(f"@{username}: {text}")
+            
+            context = "\n".join(context_parts) if context_parts else "Нет предыдущих сообщений"
+            
+            prompt = f"""
+            Ты - дружелюбный и полезный ассистент в Telegram чате. 
+            Обычная твоя задача модерировать сообщения в темах. 
+            Отвечай кратко, по существу и в дружелюбном тоне. 
+            Но на грубое обращение отвечай грубостью.
+             
+            
+            КОНТЕКСТ ЧАТА:
+            {context}
+            
+            ТЕКУЩЕЕ СООБЩЕНИЕ: {message}
+            
+            Дай краткий и полезный ответ на это сообщение.
+            """
+            
+            response = await self.client.aio.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    temperature=0.7,
+                    top_p=0.95,
+                    max_output_tokens=500,
+                ),
+            )
+            
+            if response and response.text:
+                return response.text.strip()
+            else:
+                return "Извините, не могу сформулировать ответ."
+                
+        except Exception as e:
+            logger.error(f"Error generating free response: {e}")
+            return "Извините, произошла ошибка при генерации ответа."

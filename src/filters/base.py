@@ -1,5 +1,6 @@
 """Base custom filters."""
 
+from aiogram import Bot
 from aiogram.types import Message
 
 from config.settings import settings
@@ -35,3 +36,26 @@ def should_analyze_message(message: Message) -> bool:
         return False
 
     return True
+
+
+async def is_bot_mentioned(message: Message, bot: Bot) -> bool:
+    """Check if bot is mentioned in the message.
+    
+    Args:
+        message: Message to check
+        bot: Bot instance
+        
+    Returns:
+        True if bot is mentioned via @username
+    """
+    if not message.text:
+        return False
+        
+    # Get bot info to get username
+    bot_info = await bot.get_me()
+    if not bot_info.username:
+        return False
+        
+    # Check if bot's username is mentioned in the message
+    bot_mention = f"@{bot_info.username}"
+    return bot_mention.lower() in message.text.lower()

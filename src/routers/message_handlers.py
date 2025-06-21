@@ -5,7 +5,7 @@ from aiogram.filters import invert_f
 from aiogram.types import Message
 
 from filters.chat_filters import is_target_group
-from filters.base import should_analyze_message
+from filters.base import should_analyze_message, is_bot_mentioned
 from services.chat_manager import ChatManager
 from services.response_manager import ResponseManager
 from services.group_tracker import GroupTracker
@@ -15,6 +15,45 @@ from utils.logger import logger
 
 router = Router()
 router.message.filter(F.chat.type.in_(["group", "supergroup"]))
+
+
+@router.message(is_bot_mentioned, is_target_group)
+async def handle_bot_mention(
+    message: Message, chat_manager: ChatManager, bot: Bot
+) -> None:
+    """Handle messages where bot is mentioned.
+
+    Args:
+        message: Telegram message object
+        chat_manager: Chat manager instance
+        bot: Bot instance
+    """
+    if not message.text:
+        return
+
+    username = message.from_user.username or "unknown"  # type: ignore
+    logger.info(f"Bot mentioned by {username}: {message.text[:50]}...")
+
+    try:
+        # Get topic ID from message if in a forum
+        topic_id = None
+        if hasattr(message, 'message_thread_id') and message.message_thread_id:
+            topic_id = message.message_thread_id
+            
+        # Generate free-form response
+        response = await chat_manager.ai_manager.generate_free_response(
+            message=message.text,
+            chat_id=message.chat.id,
+            topic_id=topic_id
+        )
+
+        # Send response as reply
+        await message.reply(response)
+        logger.info(f"Sent free-form response to {username}")
+
+    except Exception as e:
+        logger.error(f"Error handling bot mention: {e}")
+        await message.reply("Извините, произошла ошибка при обработке вашего сообщения.")
 
 
 @router.message(should_analyze_message, is_target_group)
