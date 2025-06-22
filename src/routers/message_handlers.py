@@ -5,7 +5,7 @@ from aiogram.filters import invert_f
 from aiogram.types import Message
 
 from filters.chat_filters import is_target_group
-from filters.base import should_analyze_message, is_bot_mentioned, should_bot_random_reply
+from filters.base import should_analyze_message, is_bot_mentioned, should_bot_random_reply, is_reply_to_bot
 from services.chat_manager import ChatManager
 from services.response_manager import ResponseManager
 from services.group_tracker import GroupTracker
@@ -17,6 +17,7 @@ router = Router()
 router.message.filter(F.chat.type.in_(["group", "supergroup"]))
 
 
+@router.message(is_target_group, is_reply_to_bot)
 @router.message(is_target_group, should_bot_random_reply)
 @router.message(is_target_group, is_bot_mentioned)
 async def handle_bot_mention(

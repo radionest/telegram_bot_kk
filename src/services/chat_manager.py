@@ -56,6 +56,19 @@ class ChatManager:
         }
         self.violation_records: Dict[str, deque[ViolationRecord]] = {}
         self.target_group_chat_id: Optional[int] = None
+        self.bot_id: Optional[int] = None
+        self.bot_username: Optional[str] = None
+
+    async def initialize_bot_info(self) -> None:
+        """Initialize bot information from Telegram API."""
+        try:
+            bot_info = await self.bot.get_me()
+            self.bot_id = bot_info.id
+            self.bot_username = bot_info.username
+            logger.info(f"Bot info initialized: @{self.bot_username} (ID: {self.bot_id})")
+        except Exception as e:
+            logger.error(f"Failed to initialize bot info: {e}")
+            raise
 
     @property
     def existing_topics_by_id(self) -> Dict[int, TopicInfo]:

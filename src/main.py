@@ -60,6 +60,10 @@ async def main() -> None:
         ai_manager=ai_client,
         group_tracker=group_tracker
     )
+    
+    # Initialize bot info in chat manager
+    await chat_manager.initialize_bot_info()
+    
     dp = Dispatcher(
         storage=storage,
         chat_manager=chat_manager,
