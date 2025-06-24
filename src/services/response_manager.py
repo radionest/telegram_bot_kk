@@ -1,20 +1,24 @@
 """Response management service for bot reactions and messages."""
 
+from typing import Optional, List
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import Message
 
 from config.settings import settings
 from services.chat_manager import ChatManager
+from services.model_pool_manager import ModelPoolManager
+from models.ai_config import AIProvider
 from utils.logger import logger
 
 
 class ResponseManager:
     """Manages bot responses based on violation levels."""
 
-    def __init__(self, bot: Bot, chat_manager: ChatManager):
+    def __init__(self, bot: Bot, chat_manager: ChatManager, model_pool_manager: Optional[ModelPoolManager] = None):
         self.bot = bot
         self.chat_manager = chat_manager
+        self.model_pool_manager = model_pool_manager
 
     async def handle_topic_violation(
         self, message: Message, suggested_topic: str, current_topic_name: str
@@ -124,3 +128,34 @@ class ResponseManager:
 
         except TelegramBadRequest as e:
             logger.error(f"Failed to send angry warning: {e}")
+    
+    async def generate_ai_response(
+        self, 
+        message: str, 
+        chat_id: int, 
+        topic_id: Optional[int] = None,
+        allowed_models: Optional[List[str]] = None,
+        allowed_providers: Optional[List[AIProvider]] = None
+    ) -> str:
+        """Generate AI response using model pool or chat manager.
+        
+        Args:
+            message: The message to respond to
+            chat_id: The chat ID
+            topic_id: Optional topic ID
+            allowed_models: List of allowed model names
+            allowed_providers: List of allowed providers
+            
+        Returns:
+            Generated response text
+        """
+        if self.model_pool_manager:
+            # Use model pool to get random client
+            ai_client = self.model_pool_manager.get_random_client(
+                allowed_models=allowed_models,
+                allowed_providers=allowed_providers
+            )
+            return await ai_client.generate_free_response(message, chat_id, topic_id)
+        else:
+            # Fall back to chat manager's AI client
+            return await self.chat_manager.ai_manager.generate_free_response(message, chat_id, topic_id)

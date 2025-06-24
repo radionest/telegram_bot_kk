@@ -33,13 +33,18 @@ class GeminiClient(AiClient):
         message_history_storage: Optional storage for maintaining conversation history
     """
 
-    def __init__(self, model_name: str = "gemini-2.0-flash-001", message_history_storage: Optional["MessageHistoryStorage"] = None) -> None:
+    def __init__(self, model_name: str = "gemini-2.0-flash-001", message_history_storage: Optional["MessageHistoryStorage"] = None, api_key: Optional[str] = None, temperature: float = 0.7) -> None:
         """Initialize Gemini client.
 
         Args:
             model_name: The Gemini model to use
             message_history_storage: Storage for message history
+            api_key: Optional API key override (defaults to settings.GEMINI_API_KEY)
+            temperature: Temperature setting for generation
         """
+        # Use provided API key or fall back to settings
+        api_key = api_key or settings.GEMINI_API_KEY
+        
         # Configure proxy if provided
         if settings.HTTP_PROXY or settings.HTTPS_PROXY:
             proxy_url = settings.HTTPS_PROXY or settings.HTTP_PROXY
@@ -47,14 +52,15 @@ class GeminiClient(AiClient):
                 client_args={'proxy': proxy_url},
                 async_client_args={'proxy': proxy_url}
             )
-            self.client = genai.Client(api_key=settings.GEMINI_API_KEY, http_options=http_options)
+            self.client = genai.Client(api_key=api_key, http_options=http_options)
             logger.info(f"Initialized Gemini client with proxy: {proxy_url}")
         else:
-            self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
+            self.client = genai.Client(api_key=api_key)
             logger.info("Initialized Gemini client without proxy")
             
         self.model_name = model_name
         self.message_history_storage = message_history_storage
+        self.temperature = temperature
         logger.info(f"Using model: {model_name}")
 
     def _clean_json_from_response(self, response_text: str) -> str:
@@ -263,7 +269,7 @@ class GeminiClient(AiClient):
                 model=self.model_name,
                 contents=prompt,
                 config=types.GenerateContentConfig(
-                    temperature=0.7,
+                    temperature=self.temperature,
                     top_p=0.95,
                     max_output_tokens=500,
                 ),

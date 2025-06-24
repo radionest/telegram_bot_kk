@@ -22,6 +22,7 @@ from services.group_tracker import GroupTracker
 from utils.gemini_client import GeminiClient
 from utils.groq_client import GroqClient
 from utils.logger import logger
+from services.model_pool_manager import ModelPoolManager
 
 
 async def main() -> None:
@@ -42,14 +43,25 @@ async def main() -> None:
     group_tracker = GroupTracker()
     
     # Select AI provider based on settings
-    if settings.AI_PROVIDER == "groq":
-        ai_client = GroqClient(
+    if settings.USE_MODEL_POOL and settings.model_pool_config:
+        # Use model pool if enabled and configured
+        ai_manager = ModelPoolManager(
+            pool_config=settings.model_pool_config,
+            message_history_storage=message_history_storage
+        )
+        logger.info(f"Using model pool with {len(settings.model_pool_config.models)} models")
+        for model in ai_manager.get_all_available_models():
+            logger.info(f"  - {model}")
+    elif settings.AI_PROVIDER == "groq":
+        # Fall back to single Groq client
+        ai_manager = GroqClient(
             model_name=settings.GROQ_MODEL,
             message_history_storage=message_history_storage
         )
         logger.info("Using Groq AI provider")
     else:
-        ai_client = GeminiClient(
+        # Fall back to single Gemini client
+        ai_manager = GeminiClient(
             model_name=settings.GEMINI_MODEL,
             message_history_storage=message_history_storage
         )
@@ -57,17 +69,21 @@ async def main() -> None:
     
     chat_manager = ChatManager(
         bot,
-        ai_manager=ai_client,
+        ai_manager=ai_manager,
         group_tracker=group_tracker
     )
     
     # Initialize bot info in chat manager
     await chat_manager.initialize_bot_info()
     
+    # Create response manager with model pool if available
+    model_pool_manager = ai_manager if isinstance(ai_manager, ModelPoolManager) else None
+    response_manager = ResponseManager(bot, chat_manager, model_pool_manager)
+    
     dp = Dispatcher(
         storage=storage,
         chat_manager=chat_manager,
-        response_manager=ResponseManager(bot, chat_manager),
+        response_manager=response_manager,
         group_tracker=group_tracker,
         message_history_storage=message_history_storage,
         topic_storage=topic_storage,

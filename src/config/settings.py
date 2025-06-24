@@ -1,11 +1,15 @@
 """Configuration settings for the bot."""
 
-from typing import Dict, List
+from typing import Dict, List, Optional
+import os
+import yaml
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from exceptions import ConfigError
 from utils.logger import logger
+from models.ai_config import ModelConfig, ModelPoolConfig, AIProvider
 
 
 class Settings(BaseSettings):
@@ -24,16 +28,16 @@ class Settings(BaseSettings):
     # Superuser configuration
     SUPERUSER_ID: int
     
-    # Gemini configuration
-    GEMINI_API_KEY: str
+    # Legacy configuration for backward compatibility
+    GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-2.0-flash-001"
-    
-    # Groq configuration
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
-    
-    # AI provider selection
     AI_PROVIDER: str = "gemini"  # "gemini" or "groq"
+    
+    # Model pool configuration
+    USE_MODEL_POOL: bool = False  # Enable model pool feature
+    MODEL_POOL_CONFIG_PATH: str = "models.yaml"  # Path to model pool config file
     
     # Proxy configuration (optional)
     HTTP_PROXY: str = ""
@@ -89,6 +93,76 @@ class Settings(BaseSettings):
     def analyze_keywords(self) -> List[str]:
         """Keywords for message analysis."""
         return ["вопрос", "помоги", "объясни", "что такое", "как", "почему", "?"]
+    
+    @property
+    def model_pool_config(self) -> Optional[ModelPoolConfig]:
+        """Load and return model pool configuration from YAML file."""
+        if not self.USE_MODEL_POOL:
+            return None
+        
+        config_path = Path(self.MODEL_POOL_CONFIG_PATH)
+        if not config_path.exists():
+            # Try relative to project root
+            config_path = Path(__file__).parent.parent.parent / self.MODEL_POOL_CONFIG_PATH
+        
+        if not config_path.exists():
+            logger.warning(f"Model pool config file not found: {self.MODEL_POOL_CONFIG_PATH}")
+            # Fall back to legacy configuration
+            return self._create_legacy_pool_config()
+        
+        try:
+            with open(config_path, 'r') as f:
+                config_data = yaml.safe_load(f)
+            
+            models = []
+            for model_data in config_data.get('models', []):
+                # Substitute environment variables
+                api_key = model_data['api_key']
+                if api_key.startswith('${') and api_key.endswith('}'):
+                    env_var = api_key[2:-1]
+                    api_key = os.getenv(env_var, '')
+                    if not api_key:
+                        logger.warning(f"Environment variable {env_var} not set, skipping model")
+                        continue
+                
+                models.append(ModelConfig(
+                    provider=AIProvider(model_data['provider']),
+                    model_name=model_data['model_name'],
+                    api_key=api_key,
+                    temperature=model_data.get('temperature', 0.7),
+                    max_tokens=model_data.get('max_tokens'),
+                    extra_params=model_data.get('extra_params', {})
+                ))
+            
+            if models:
+                return ModelPoolConfig(models=models)
+            else:
+                logger.warning("No valid models found in config file")
+                return self._create_legacy_pool_config()
+                
+        except Exception as e:
+            logger.error(f"Failed to load model pool config: {e}")
+            return self._create_legacy_pool_config()
+    
+    def _create_legacy_pool_config(self) -> Optional[ModelPoolConfig]:
+        """Create model pool from legacy configuration."""
+        models = []
+        if self.GEMINI_API_KEY:
+            models.append(ModelConfig(
+                provider=AIProvider.GEMINI,
+                model_name=self.GEMINI_MODEL,
+                api_key=self.GEMINI_API_KEY,
+                temperature=0.7
+            ))
+        if self.GROQ_API_KEY:
+            models.append(ModelConfig(
+                provider=AIProvider.GROQ,
+                model_name=self.GROQ_MODEL,
+                api_key=self.GROQ_API_KEY,
+                temperature=0.7
+            ))
+        
+        return ModelPoolConfig(models=models) if models else None
 
 
 # Create settings instance with validation

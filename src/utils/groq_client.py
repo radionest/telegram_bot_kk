@@ -30,16 +30,20 @@ class GroqClient(AiClient):
         message_history_storage: Optional storage for maintaining conversation history
     """
 
-    def __init__(self, model_name: str = "llama-3.3-70b-versatile", message_history_storage: Optional["MessageHistoryStorage"] = None) -> None:
+    def __init__(self, model_name: str = "llama-3.3-70b-versatile", message_history_storage: Optional["MessageHistoryStorage"] = None, api_key: Optional[str] = None, temperature: float = 0.7) -> None:
         """Initialize Groq client.
 
         Args:
             model_name: The Groq model to use
             message_history_storage: Storage for message history
+            api_key: Optional API key override (defaults to settings.GROQ_API_KEY)
+            temperature: Temperature setting for generation
         """
-        self.client = Groq(api_key=settings.GROQ_API_KEY)
+        api_key = api_key or settings.GROQ_API_KEY
+        self.client = Groq(api_key=api_key)
         self.model_name = model_name
         self.message_history_storage = message_history_storage
+        self.temperature = temperature
         logger.info(f"Initialized Groq client with model: {model_name}")
 
     def _clean_json_from_response(self, response_text: str) -> str:
