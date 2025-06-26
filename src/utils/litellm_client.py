@@ -383,7 +383,7 @@ class LiteLLMClient:
 
         try:
             response = await self._request_with_fallback(
-                messages, tags=["analysis", "classification"]
+                messages, tags=["classification"]
             )
 
             # Parse response
