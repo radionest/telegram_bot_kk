@@ -7,8 +7,8 @@ from aiogram.types import Message
 
 from config.settings import settings
 from services.chat_manager import ChatManager
-from services.model_pool_manager import ModelPoolManager
-from models.ai_config import AIProvider
+from services.ai.model_pool_manager import ModelPoolManager
+from models.ai_config import AIProviderName
 from utils.logger import logger
 
 
@@ -135,7 +135,7 @@ class ResponseManager:
         chat_id: int, 
         topic_id: Optional[int] = None,
         allowed_models: Optional[List[str]] = None,
-        allowed_providers: Optional[List[AIProvider]] = None
+        allowed_providers: Optional[List[AIProviderName]] = None
     ) -> str:
         """Generate AI response using model pool or chat manager.
         

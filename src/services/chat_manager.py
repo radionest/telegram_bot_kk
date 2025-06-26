@@ -3,7 +3,7 @@
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, overload, Union
+from typing import Dict, List, Optional, overload
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
@@ -11,11 +11,9 @@ from aiogram.types import Message
 
 from config.settings import settings
 from utils.logger import logger
-from services.ai_client import AiClient
-from services.model_pool_manager import ModelPoolManager
+from services.ai.model_pool_manager import ModelPoolManager
 from services.group_tracker import GroupTracker
 from models.analysis import TopicAnalysisRequest, TopicAnalysisResult
-from models.ai_config import AIProvider
 from exceptions import ChatManagerError
 
 
@@ -46,12 +44,11 @@ class ChatManager:
     def __init__(
         self,
         bot: Bot,
-        ai_manager: Union[AiClient, ModelPoolManager],
+        ai_manager: ModelPoolManager,
         group_tracker: Optional[GroupTracker] = None,
     ):
         self.bot = bot
         self.ai_manager = ai_manager
-        self.model_pool_manager = ai_manager if isinstance(ai_manager, ModelPoolManager) else None
         self.group_tracker = group_tracker or GroupTracker()
         self.existing_topics: Dict[str, TopicInfo] = {
             t_name: TopicInfo(name=t_name, description=t_description)
@@ -558,13 +555,7 @@ class ChatManager:
 
         # Analyze topic compliance
         try:
-            if self.model_pool_manager:
-                # Use model pool to get random client
-                ai_client = self.model_pool_manager.get_random_client()
-                result = await ai_client.analyze_topic_compliance(request)
-            else:
-                # Use single AI client
-                result = await self.ai_manager.analyze_topic_compliance(request)
+            result = await self.ai_manager.analyze_topic_compliance(request)
         except Exception as e:
             logger.error(f"Error analyzing topic compliance: {str(e)}")
             return None

@@ -1,7 +1,7 @@
 """Gemini API client for message analysis."""
 
 import json
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from google import genai
 from google.genai import types

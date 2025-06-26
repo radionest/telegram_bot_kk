@@ -19,10 +19,8 @@ from services.message_history_storage import InMemoryMessageHistoryStorage
 from services.memory_topic_storage import MemoryTopicStorage
 from services.response_manager import ResponseManager
 from services.group_tracker import GroupTracker
-from utils.gemini_client import GeminiClient
-from utils.groq_client import GroqClient
 from utils.logger import logger
-from services.model_pool_manager import ModelPoolManager
+from services.ai.model_pool_manager import ModelPoolManager
 
 
 async def main() -> None:
@@ -42,30 +40,17 @@ async def main() -> None:
     topic_storage = MemoryTopicStorage()
     group_tracker = GroupTracker()
     
-    # Select AI provider based on settings
-    if settings.USE_MODEL_POOL and settings.model_pool_config:
-        # Use model pool if enabled and configured
-        ai_manager = ModelPoolManager(
-            pool_config=settings.model_pool_config,
-            message_history_storage=message_history_storage
-        )
-        logger.info(f"Using model pool with {len(settings.model_pool_config.models)} models")
-        for model in ai_manager.get_all_available_models():
-            logger.info(f"  - {model}")
-    elif settings.AI_PROVIDER == "groq":
-        # Fall back to single Groq client
-        ai_manager = GroqClient(
-            model_name=settings.GROQ_MODEL,
-            message_history_storage=message_history_storage
-        )
-        logger.info("Using Groq AI provider")
-    else:
-        # Fall back to single Gemini client
-        ai_manager = GeminiClient(
-            model_name=settings.GEMINI_MODEL,
-            message_history_storage=message_history_storage
-        )
-        logger.info("Using Gemini AI provider")
+    # Initialize AI model pool manager
+    if not settings.model_pool_config:
+        raise ConfigError("Model pool configuration is required. Please configure MODEL_POOL_CONFIG_PATH or set GEMINI_API_KEY/GROQ_API_KEY")
+    
+    ai_manager = ModelPoolManager(
+        pool_config=settings.model_pool_config,
+        message_history_storage=message_history_storage
+    )
+    logger.info(f"Using model pool with {len(settings.model_pool_config.models)} models")
+    for model in ai_manager.get_all_available_models():
+        logger.info(f"  - {model}")
     
     chat_manager = ChatManager(
         bot,
@@ -76,9 +61,8 @@ async def main() -> None:
     # Initialize bot info in chat manager
     await chat_manager.initialize_bot_info()
     
-    # Create response manager with model pool if available
-    model_pool_manager = ai_manager if isinstance(ai_manager, ModelPoolManager) else None
-    response_manager = ResponseManager(bot, chat_manager, model_pool_manager)
+    # Create response manager with model pool
+    response_manager = ResponseManager(bot, chat_manager, ai_manager)
     
     dp = Dispatcher(
         storage=storage,
