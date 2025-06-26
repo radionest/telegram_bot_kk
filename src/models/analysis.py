@@ -58,4 +58,3 @@ class TopicAnalysisResult:
     is_appropriate: bool
     suggested_topic: Optional[str] = None
     confidence: float = 0.0
-    reason: Optional[str] = None

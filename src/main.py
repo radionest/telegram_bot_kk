@@ -19,8 +19,7 @@ from services.message_history_storage import InMemoryMessageHistoryStorage
 from services.memory_topic_storage import MemoryTopicStorage
 from services.response_manager import ResponseManager
 from services.group_tracker import GroupTracker
-from utils.gemini_client import GeminiClient
-from utils.groq_client import GroqClient
+from utils.litellm_client import LiteLLMClient, RouterConfig
 from utils.logger import logger
 
 
@@ -41,19 +40,16 @@ async def main() -> None:
     topic_storage = MemoryTopicStorage()
     group_tracker = GroupTracker()
     
-    # Select AI provider based on settings
-    if settings.AI_PROVIDER == "groq":
-        ai_client = GroqClient(
-            model_name=settings.GROQ_MODEL,
-            message_history_storage=message_history_storage
-        )
-        logger.info("Using Groq AI provider")
-    else:
-        ai_client = GeminiClient(
-            model_name=settings.GEMINI_MODEL,
-            message_history_storage=message_history_storage
-        )
-        logger.info("Using Gemini AI provider")
+    # Initialize LiteLLM client
+    config_path = getattr(settings, 'LITELLM_CONFIG_PATH', 'litellm_models.yaml')
+    router_strategy = getattr(settings, 'LITELLM_ROUTER_STRATEGY', 'priority')
+    
+    ai_client = LiteLLMClient(
+        config_path=config_path,
+        router_config=RouterConfig(strategy=router_strategy),
+        message_history_storage=message_history_storage
+    )
+    logger.info(f"Using LiteLLM with {len(ai_client.models)} models and {router_strategy} routing")
     
     chat_manager = ChatManager(
         bot,

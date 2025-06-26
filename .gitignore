@@ -73,3 +73,5 @@ htmlcov/
 .ipynb_checkpoints/
 *.ipynb
 pdm.lock
+litellm_models.yaml
+.claude/settings.local.json

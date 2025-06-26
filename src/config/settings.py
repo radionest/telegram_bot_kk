@@ -24,16 +24,9 @@ class Settings(BaseSettings):
     # Superuser configuration
     SUPERUSER_ID: int
     
-    # Gemini configuration
-    GEMINI_API_KEY: str
-    GEMINI_MODEL: str = "gemini-2.0-flash-001"
-    
-    # Groq configuration
-    GROQ_API_KEY: str = ""
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
-    
-    # AI provider selection
-    AI_PROVIDER: str = "gemini"  # "gemini" or "groq"
+    # LiteLLM configuration
+    LITELLM_CONFIG_PATH: str = "litellm_models.yaml"
+    LITELLM_ROUTER_STRATEGY: str = "load_balance"  # Options: round_robin, priority, random, load_balance
     
     # Proxy configuration (optional)
     HTTP_PROXY: str = ""
@@ -98,5 +91,7 @@ try:
     logger.info("Configuration loaded successfully")
     logger.debug(f"MIN_MESSAGE_LENGTH: {settings.MIN_MESSAGE_LENGTH}")
     logger.debug(f"REACTION_EMOJI: {settings.REACTION_EMOJI}")
+    logger.debug(f"LITELLM_CONFIG_PATH: {settings.LITELLM_CONFIG_PATH}")
+    logger.debug(f"LITELLM_ROUTER_STRATEGY: {settings.LITELLM_ROUTER_STRATEGY}")
 except Exception as e:
     raise ConfigError(f"Failed to load configuration: {e}")
