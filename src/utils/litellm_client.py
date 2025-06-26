@@ -191,7 +191,7 @@ class LiteLLMClient:
             # Select model with lowest error rate
             model = min(
                 available_models,
-                key=lambda m: self.model_states[m.model_id]["failed_requests"]
+                key=lambda m: (self.model_states[m.model_id]["failed_requests"] + 1)
                 / max(1, self.model_states[m.model_id]["total_requests"]),
             )
         else:
@@ -360,6 +360,7 @@ class LiteLLMClient:
         ОПИСАНИЕ ТЕМЫ: {request.current_topic_description}
 
         {"ДОСТУПНЫЕ ТЕМЫ ФОРУМА:\n" + available_topics_info if available_topics_info else ""}
+        
         {message_context}
 
         СООБЩЕНИЕ ДЛЯ АНАЛИЗА: {request.message_text}
