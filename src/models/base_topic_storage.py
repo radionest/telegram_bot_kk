@@ -1,14 +1,14 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any, List, Set
 from datetime import datetime
-from dataclasses import dataclass
+
+from pydantic import BaseModel, Field
 
 
-@dataclass
-class TopicInfo:
+class TopicInfo(BaseModel):
     """Информация о топике в группе."""
     group_id: int
-    topic_id: Optional[int]  # None для general topic
+    topic_id: Optional[int] = None  # None для general topic
     name: str
     icon_color: Optional[int] = None
     icon_emoji_id: Optional[str] = None
@@ -19,14 +19,13 @@ class TopicInfo:
     metadata: Optional[Dict[str, Any]] = None
 
 
-@dataclass
-class GroupTopicsInfo:
+class GroupTopicsInfo(BaseModel):
     """Информация о группе и её топиках."""
     group_id: int
     group_title: str
     topics: List[TopicInfo]
     has_general_topic: bool
-    last_updated: datetime
+    last_updated: datetime = Field(default_factory=datetime.now)
     is_forum: bool = True
 
 

@@ -1,13 +1,13 @@
 """Chat management service for group operations."""
 
 from collections import deque
-from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, overload
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 from aiogram.types import Message
+from pydantic import BaseModel
 
 from config.settings import settings
 from utils.logger import logger
@@ -17,8 +17,7 @@ from models.analysis import TopicAnalysisRequest, TopicAnalysisResult
 from exceptions import ChatManagerError
 
 
-@dataclass
-class TopicInfo:
+class TopicInfo(BaseModel):
     """Information about a forum topic."""
 
     name: str
@@ -27,8 +26,7 @@ class TopicInfo:
     custom_emoji_id: Optional[str] = None
 
 
-@dataclass
-class ViolationRecord:
+class ViolationRecord(BaseModel):
     """Record of a topic violation."""
 
     user_id: int

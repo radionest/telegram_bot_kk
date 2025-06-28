@@ -2,7 +2,6 @@
 
 import random
 from typing import Optional, Dict, Any, List, Union
-from dataclasses import dataclass, field
 import yaml
 import json
 from pathlib import Path
@@ -10,17 +9,18 @@ from pathlib import Path
 import litellm
 from litellm import acompletion
 from loguru import logger
+from pydantic import BaseModel, Field
 
 from models.analysis import (
     TopicAnalysisRequest,
     TopicAnalysisResult,
 )
 from services.message_history_storage import MessageHistoryStorage
+from services.game_knowledge_service import GameKnowledgeService
 from exceptions import APIError
 
 
-@dataclass
-class ModelConfig:
+class ModelConfig(BaseModel):
     """Configuration for a single AI model."""
 
     name: str
@@ -31,8 +31,8 @@ class ModelConfig:
     timeout: int = 30
     max_retries: int = 3
     priority: int = 1
-    tags: List[str] = field(default_factory=list)
-    extra_params: Dict[str, Any] = field(default_factory=dict)
+    tags: List[str] = Field(default_factory=list)
+    extra_params: Dict[str, Any] = Field(default_factory=dict)
     proxy: Optional[str] = None  # HTTP/HTTPS/SOCKS5 proxy URL
 
     @property
@@ -43,15 +43,14 @@ class ModelConfig:
         return f"{self.provider}/{self.name}"
 
 
-@dataclass
-class RouterConfig:
+class RouterConfig(BaseModel):
     """Configuration for request routing."""
 
     strategy: str = "round_robin"  # round_robin, priority, random, load_balance
     fallback_enabled: bool = True
     max_fallback_attempts: int = 3
     health_check_interval: int = 300  # seconds
-    model_selection_rules: Dict[str, Any] = field(default_factory=dict)
+    model_selection_rules: Dict[str, Any] = Field(default_factory=dict)
 
 
 class LiteLLMClient:
@@ -63,6 +62,7 @@ class LiteLLMClient:
         models: Optional[List[ModelConfig]] = None,
         router_config: Optional[RouterConfig] = None,
         message_history_storage: Optional[MessageHistoryStorage] = None,
+        game_knowledge_service: Optional[GameKnowledgeService] = None,
     ):
         """Initialize LiteLLM client.
 
@@ -73,6 +73,7 @@ class LiteLLMClient:
             message_history_storage: Message history storage instance
         """
         self.message_history_storage = message_history_storage
+        self.game_knowledge_service = game_knowledge_service
         self.router_config = router_config or RouterConfig()
 
         # Load models from config or use provided list
@@ -353,6 +354,20 @@ class LiteLLMClient:
                     context_parts.append(f"@{username}: {text}")
                 if context_parts:
                     message_context = f"\n\nКОНТЕКСТ ПРЕДЫДУЩИХ СООБЩЕНИЙ:\n{chr(10).join(context_parts)}"
+        
+        # Get game context if available
+        game_context = ""
+        if self.game_knowledge_service:
+            # Extract potential game-related tags from message
+            tags = self._extract_game_tags(request.message_text)
+            game_context = await self.game_knowledge_service.get_game_context(
+                topic=request.message_text,
+                tags=tags,
+                message_context=message_context,
+                limit=3
+            )
+            if game_context:
+                game_context = f"\n\n{game_context}"
 
         prompt = f"""
         Проанализируй, подходит ли данное сообщение для текущей темы форума.
@@ -362,6 +377,7 @@ class LiteLLMClient:
         {"ДОСТУПНЫЕ ТЕМЫ ФОРУМА:\n" + available_topics_info if available_topics_info else ""}
         
         {message_context}
+        {game_context}
 
         СООБЩЕНИЕ ДЛЯ АНАЛИЗА: {request.message_text}
 
@@ -436,19 +452,32 @@ class LiteLLMClient:
                 if context_parts:
                     context = "\n".join(context_parts)
 
+        # Get game context for response
+        game_context = ""
+        if self.game_knowledge_service:
+            tags = self._extract_game_tags(message)
+            game_context = await self.game_knowledge_service.get_game_context(
+                topic=message,
+                tags=tags,
+                message_context=context,
+                limit=5
+            )
+            if game_context:
+                game_context = f"\n\n{game_context}"
+        
         prompt = f"""
-        Ты - дружелюбный и полезный ассистент в Telegram чате. 
+        Ты - дружелюбный и полезный ассистент в Telegram чате клана War Legends. 
         Обычная твоя задача модерировать сообщения в темах. 
         Отвечай кратко, по существу и в дружелюбном тоне. 
         Но на грубое обращение отвечай грубостью.
         
-       
         КОНТЕКСТ ЧАТА:
         {context}
+        {game_context}
       
         ТЕКУЩЕЕ СООБЩЕНИЕ: {message}
     
-        Дай краткий и полезный ответ на это сообщение.
+        Дай краткий и полезный ответ на это сообщение, используя знания об игре когда это уместно.
         """
 
         messages = [{"role": "user", "content": prompt}]
@@ -495,3 +524,33 @@ class LiteLLMClient:
                 "last_error": state["last_error"],
             }
         return stats
+    
+    def _extract_game_tags(self, text: str) -> List[str]:
+        """Extract potential game-related tags from text."""
+        # Common game-related keywords
+        game_keywords = {
+            "юнит", "юниты", "unit", "units",
+            "здание", "здания", "building", "buildings",
+            "стратегия", "стратегии", "strategy", "strategies",
+            "атака", "атаковать", "attack", "attacking",
+            "защита", "защищать", "defense", "defending",
+            "раш", "rush", "бум", "boom",
+            "мечник", "лучник", "кавалерия", "копейщик", "катапульта", "рыцарь",
+            "swordsman", "archer", "cavalry", "spearman", "catapult", "knight",
+            "казармы", "конюшня", "мастерская",
+            "barracks", "stable", "workshop",
+            "ресурсы", "золото", "дерево", "еда", "камень",
+            "resources", "gold", "wood", "food", "stone",
+            "экономика", "economy",
+            "бой", "сражение", "battle", "combat",
+            "counter", "контр", "против",
+        }
+        
+        text_lower = text.lower()
+        found_tags = []
+        
+        for keyword in game_keywords:
+            if keyword in text_lower:
+                found_tags.append(keyword)
+        
+        return found_tags

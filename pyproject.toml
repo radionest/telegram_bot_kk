@@ -12,7 +12,9 @@ dependencies = [
     "loguru>=0.7.2",
     "pydantic-settings",
     "litellm>=1.56.0",
-    "pyyaml>=6.0.1"
+    "pyyaml>=6.0.1",
+    "chromadb>=0.4.24",
+    "sentence-transformers>=2.2.2"
 ]
 requires-python = ">=3.12"
 readme = "README.md"

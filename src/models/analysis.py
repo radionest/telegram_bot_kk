@@ -1,8 +1,9 @@
 """Models for message analysis."""
 
-from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, Protocol, Iterable
+
+from pydantic import BaseModel, Field
 
 
 class ResponseType(Enum):
@@ -12,8 +13,7 @@ class ResponseType(Enum):
     MESSAGE = "message"
 
 
-@dataclass
-class AnalysisRequest:
+class AnalysisRequest(BaseModel):
     """Request for message analysis."""
 
     message_text: str
@@ -22,8 +22,7 @@ class AnalysisRequest:
     username: Optional[str] = None
 
 
-@dataclass
-class AnalysisResult:
+class AnalysisResult(BaseModel):
     """Result of message analysis."""
 
     text: str
@@ -36,8 +35,7 @@ class Topic(Protocol):
     description: str
 
 
-@dataclass
-class TopicAnalysisRequest:
+class TopicAnalysisRequest(BaseModel):
     """Request for topic compliance analysis."""
 
     message_text: str
@@ -51,10 +49,9 @@ class TopicAnalysisRequest:
     reply_to_message_id: Optional[int] = None  # ID сообщения на которое отвечаем
 
 
-@dataclass
-class TopicAnalysisResult:
+class TopicAnalysisResult(BaseModel):
     """Result of topic compliance analysis."""
 
     is_appropriate: bool
     suggested_topic: Optional[str] = None
-    confidence: float = 0.0
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
