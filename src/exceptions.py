@@ -48,4 +48,49 @@ class ChatManagerError(Exception):
     This exception is raised when errors occur during chat management operations
     such as setting up topics, managing permissions, or handling chat-related operations.
     """
-    ...
+    pass
+
+
+class DatabaseError(Exception):
+    """Base exception for database operations."""
+    
+    def __init__(self, message: str, details: str = ""):
+        """Initialize database error.
+        
+        Args:
+            message: Error message describing the database issue
+            details: Additional details about the error
+        """
+        self.message = message
+        self.details = details
+        super().__init__(self.message)
+
+
+class ChromaServiceError(DatabaseError):
+    """Base exception for ChromaDB service."""
+    pass
+
+
+class ChromaInitializationError(ChromaServiceError):
+    """ChromaDB initialization error."""
+    pass
+
+
+class ChromaConnectionError(ChromaServiceError):
+    """ChromaDB connection error."""
+    pass
+
+
+class ChromaDocumentError(ChromaServiceError):
+    """ChromaDB document operation error."""
+    pass
+
+
+class ChromaSearchError(ChromaServiceError):
+    """ChromaDB search operation error."""
+    pass
+
+
+class ChromaValidationError(ChromaServiceError):
+    """ChromaDB data validation error."""
+    pass

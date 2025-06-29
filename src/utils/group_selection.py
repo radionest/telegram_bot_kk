@@ -104,13 +104,8 @@ async def send_group_selection_message(
             status_text += "Бот пока не добавлен ни в одну группу.\n"
             status_text += "Добавьте бота в группу и отправьте там любое сообщение."
 
-    # Escape text before sending
-
     await bot.send_message(
-        chat_id=chat_id, 
-        text=status_text, 
-        reply_markup=keyboard, 
-        parse_mode="HTML"
+        chat_id=chat_id, text=status_text, reply_markup=keyboard, parse_mode="Markdown"
     )
 
 

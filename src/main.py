@@ -15,7 +15,9 @@ from middlewares.topic_update_middleware import TopicUpdateMiddleware
 from routers.message_handlers import router as message_router
 from routers.admin import router as admin_router
 from services.chat_manager import ChatManager
-from services.message_history_storage import InMemoryMessageHistoryStorage
+from services.chroma_crud import ChromaCRUD
+from models.message import StoredMessage
+from services.chroma_message_storage import ChromaMessageHistoryStorage
 from services.memory_topic_storage import MemoryTopicStorage
 from services.response_manager import ResponseManager
 from services.group_tracker import GroupTracker
@@ -36,7 +38,16 @@ async def main() -> None:
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
     storage = MemoryStorage()
-    message_history_storage = InMemoryMessageHistoryStorage()
+    
+    # Initialize ChromaDB
+    chroma_crud = ChromaCRUD(
+        chroma_host=settings.CHROMA_HOST,
+        chroma_port=settings.CHROMA_PORT,
+        embedding_model=settings.CHROMA_EMBEDDING_MODEL
+    )
+    
+    message_history_storage = ChromaMessageHistoryStorage(chroma_crud,
+                                                          collection_name='telegram_messages')
     topic_storage = MemoryTopicStorage()
     group_tracker = GroupTracker()
     

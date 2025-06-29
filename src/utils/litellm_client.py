@@ -10,6 +10,7 @@ from pathlib import Path
 import litellm
 from litellm import acompletion
 from loguru import logger
+from aiogram.types import Message
 
 from models.analysis import (
     TopicAnalysisRequest,
@@ -59,10 +60,10 @@ class LiteLLMClient:
 
     def __init__(
         self,
+        message_history_storage: MessageHistoryStorage,
         config_path: Optional[Union[str, Path]] = None,
         models: Optional[List[ModelConfig]] = None,
         router_config: Optional[RouterConfig] = None,
-        message_history_storage: Optional[MessageHistoryStorage] = None,
     ):
         """Initialize LiteLLM client.
 
@@ -201,15 +202,15 @@ class LiteLLMClient:
 
     def _clean_json_response(self, response: str) -> str:
         """Clean JSON response from markdown formatting.
-        
+
         Args:
             response: Raw response that may contain markdown formatting
-            
+
         Returns:
             Cleaned JSON string
         """
         response = response.strip()
-        
+
         # Check if response is wrapped in markdown code blocks
         if response.startswith("```"):
             # Remove opening markdown
@@ -217,13 +218,13 @@ class LiteLLMClient:
                 response = response[7:]  # Remove ```json
             elif response.startswith("```"):
                 response = response[3:]  # Remove ```
-            
+
             # Remove closing markdown
             if response.endswith("```"):
                 response = response[:-3]
-            
+
             response = response.strip()
-        
+
         return response
 
     async def _make_request(
@@ -345,14 +346,22 @@ class LiteLLMClient:
             history = await self.message_history_storage.get_recent_messages(
                 request.chat_id, limit=10
             )
-            if history:
-                context_parts = []
-                for msg in reversed(history[:-1]):  # Exclude current message
-                    username = msg.from_user.username or "Неизвестный"
-                    text = msg.text or "[медиа]"
-                    context_parts.append(f"@{username}: {text}")
-                if context_parts:
-                    message_context = f"\n\nКОНТЕКСТ ПРЕДЫДУЩИХ СООБЩЕНИЙ:\n{chr(10).join(context_parts)}"
+
+            context_parts = []
+            for msg in reversed(history[:-1]):  # Exclude current message
+                match msg:
+                    case Message(from_user=user, text=text, caption=caption) if user:
+                        username = user.username or "Неизвестный"
+                        text = text or caption or "[медиа]"
+                    case _:
+                        username = "Неизвестный"
+                        text = "[медиа]"
+
+                context_parts.append(f"@{username}: {text}")
+            if context_parts:
+                message_context = (
+                    f"\n\nКОНТЕКСТ ПРЕДЫДУЩИХ СООБЩЕНИЙ:\n{chr(10).join(context_parts)}"
+                )
 
         prompt = f"""
         Проанализируй, подходит ли данное сообщение для текущей темы форума.
@@ -430,8 +439,13 @@ class LiteLLMClient:
             if history:
                 context_parts = []
                 for msg in reversed(history[:-1]):  # Exclude current message
-                    username = msg.from_user.username or "Неизвестный"
-                    text = msg.text or "[медиа]"
+                    match msg:
+                        case Message(from_user=user, text=text, caption=caption) if user:
+                            username = user.username or "Неизвестный"
+                            text = text or caption or "[медиа]"
+                        case _:
+                            username = "Неизвестный"
+                            text = "[медиа]"
                     context_parts.append(f"@{username}: {text}")
                 if context_parts:
                     context = "\n".join(context_parts)

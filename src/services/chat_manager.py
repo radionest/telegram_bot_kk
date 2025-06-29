@@ -65,19 +65,25 @@ class ChatManager:
             bot_info = await self.bot.get_me()
             self.bot_id = bot_info.id
             self.bot_username = bot_info.username
-            logger.info(f"Bot info initialized: @{self.bot_username} (ID: {self.bot_id})")
+            logger.info(
+                f"Bot info initialized: @{self.bot_username} (ID: {self.bot_id})"
+            )
         except Exception as e:
             logger.error(f"Failed to initialize bot info: {e}")
             raise
 
     @property
     def existing_topics_by_id(self) -> Dict[int, TopicInfo]:
-        """Get existing topics indexed by topic ID.
-        
+        """Get existing topics indexed by topic ID except of General topic.
+
         Returns:
             Dictionary mapping topic IDs to TopicInfo objects
         """
-        return {topic.topic_id: topic for topic in self.existing_topics.values()}
+        return {
+            topic.topic_id: topic
+            for topic in self.existing_topics.values()
+            if topic.topic_id is not None
+        }
 
     async def set_target_group_chat_id(self, group_chat_id: int) -> None:
         """Set the group chat ID for this manager.
@@ -141,10 +147,10 @@ class ChatManager:
 
     async def check_topic_by_id(self, topic_id: int) -> Optional[TopicInfo]:
         """Check if a topic exists by sending a test message.
-        
+
         Args:
             topic_id: The topic ID to check
-            
+
         Returns:
             TopicInfo if topic exists and is open, None otherwise
         """
@@ -187,14 +193,14 @@ class ChatManager:
 
     async def update_existing_topics(self) -> None:
         """Update existing topics by probing with test messages.
-        
+
         Sends test messages to potential topic IDs to determine which topics
         exist and are open in the target group.
-        
+
         Returns:
             None
         """
-        
+
         self.existing_topics = {}
         if not self.target_group_chat_id:
             logger.error("Target group chat ID not set")
@@ -286,12 +292,10 @@ class ChatManager:
         logger.info(f"Reset violation counter for topic {topic_name}")
 
     @overload
-    def add_topic(self, *, topic_id: int, name: str, description: str) -> None: 
-        ...
+    def add_topic(self, *, topic_id: int, name: str, description: str) -> None: ...  # noqa: E501
 
     @overload
-    def add_topic(self, *, topic_info: TopicInfo) -> None: 
-        ...
+    def add_topic(self, *, topic_info: TopicInfo) -> None: ...
 
     def add_topic(
         self,
@@ -335,30 +339,29 @@ class ChatManager:
         # Check if message has forum topic thread info
 
         topic_id = getattr(message, "message_thread_id", None)
-
+        topic_name = None
         match message:
             case Message(forum_topic_created=forum_topic) if forum_topic:
                 topic_name = forum_topic.name
-                custom_emoji_id = getattr(forum_topic, 'icon_custom_emoji_id', None)
+                custom_emoji_id = getattr(forum_topic, "icon_custom_emoji_id", None)
                 logger.debug(f"Found topic name from forum_topic_created: {topic_name}")
             case Message(reply_to_message=Message(forum_topic_created=forum_topic)) if (
                 forum_topic
             ):
                 topic_name = forum_topic.name
-                custom_emoji_id = getattr(forum_topic, 'icon_custom_emoji_id', None)
+                custom_emoji_id = getattr(forum_topic, "icon_custom_emoji_id", None)
                 logger.debug(f"Found topic name from reply: {topic_name}")
             case Message(message_thread_id=topic_tread_id) if topic_tread_id and (
                 topic := self.existing_topics_by_id.get(topic_tread_id)
             ):
                 topic_name = topic.name
-            case Message(message_thread_id=topic_tread_id,
-                         is_topic_message=is_topic) if topic_tread_id and is_topic:
+            case Message(
+                message_thread_id=topic_tread_id, is_topic_message=is_topic
+            ) if topic_tread_id and is_topic:
                 topic = await self.check_topic_by_id(topic_tread_id)
                 if topic:
                     self.existing_topics[topic.name].topic_id = topic.topic_id
                     topic_name = topic.name
-                else:
-                    topic_name = None
             case _:
                 logger.debug(
                     f"Topic name not found for message: {message.text} {message.is_topic_message}"
@@ -371,7 +374,7 @@ class ChatManager:
             )
             return None
         # Add the topic
-        custom_emoji_id = locals().get('custom_emoji_id')
+        custom_emoji_id = locals().get("custom_emoji_id")
         return TopicInfo(
             topic_id=topic_id,
             name=topic_name,
@@ -402,40 +405,44 @@ class ChatManager:
 
     async def update_topic_custom_emoji(self, message: Message) -> None:
         """Update custom emoji ID for existing topics from message.
-        
+
         Args:
             message: Message that may contain forum topic info with custom emoji
         """
         # Try to extract custom emoji from message
         custom_emoji_id = None
         topic_name = None
-        
+
         match message:
             case Message(forum_topic_created=forum_topic) if forum_topic:
                 topic_name = forum_topic.name
-                custom_emoji_id = getattr(forum_topic, 'icon_custom_emoji_id', None)
-            case Message(reply_to_message=Message(forum_topic_created=forum_topic)) if forum_topic:
+                custom_emoji_id = getattr(forum_topic, "icon_custom_emoji_id", None)
+            case Message(reply_to_message=Message(forum_topic_created=forum_topic)) if (
+                forum_topic
+            ):
                 topic_name = forum_topic.name
-                custom_emoji_id = getattr(forum_topic, 'icon_custom_emoji_id', None)
-                
+                custom_emoji_id = getattr(forum_topic, "icon_custom_emoji_id", None)
+
         # Update existing topic if we found custom emoji
         if topic_name and custom_emoji_id and topic_name in self.existing_topics:
             self.existing_topics[topic_name].custom_emoji_id = custom_emoji_id
-            logger.info(f"Updated custom emoji for topic '{topic_name}': {custom_emoji_id}")
+            logger.info(
+                f"Updated custom emoji for topic '{topic_name}': {custom_emoji_id}"
+            )
 
     async def test_topic_emoji_detection(self, topic_id: int) -> Optional[str]:
         """Test topic custom emoji detection by sending and analyzing a test message.
-        
+
         Args:
             topic_id: ID of the topic to test
-            
+
         Returns:
             Custom emoji ID if detected, None otherwise
         """
         if not self.target_group_chat_id:
             logger.error("Target group chat ID not set")
             return None
-            
+
         try:
             # Send test message to topic
             test_message = await self.bot.send_message(
@@ -443,66 +450,67 @@ class ChatManager:
                 text="🔍 Testing topic info",
                 message_thread_id=topic_id,
             )
-            
+
             # Analyze message to extract topic info
             custom_emoji_id = await self._analyze_test_message(test_message)
-            
+
             # Delete test message
             await self._delete_test_message(test_message)
-            
+
             return custom_emoji_id
-            
+
         except Exception as e:
             logger.error(f"Error testing topic {topic_id}: {e}")
             return None
-    
+
     async def _analyze_test_message(self, message: Message) -> Optional[str]:
         """Analyze test message to extract topic information.
-        
+
         Args:
             message: Test message sent to topic
-            
+
         Returns:
             Custom emoji ID if found, None otherwise
         """
         logger.debug(f"Analyzing test message {message.message_id}")
-        
+
         # Log all message attributes for debugging
         logger.debug(f"Message attributes: {message.__dict__}")
-        
+
         # Check various ways topic info might be present
         custom_emoji_id = None
-        
+
         # Check forum_topic_created
-        if hasattr(message, 'forum_topic_created') and message.forum_topic_created:
+        if hasattr(message, "forum_topic_created") and message.forum_topic_created:
             forum_topic = message.forum_topic_created
-            custom_emoji_id = getattr(forum_topic, 'icon_custom_emoji_id', None)
-            logger.info(f"Found custom emoji from forum_topic_created: {custom_emoji_id}")
-            
+            custom_emoji_id = getattr(forum_topic, "icon_custom_emoji_id", None)
+            logger.info(
+                f"Found custom emoji from forum_topic_created: {custom_emoji_id}"
+            )
+
         # Check reply_to_message
-        elif hasattr(message, 'reply_to_message') and message.reply_to_message:
+        elif hasattr(message, "reply_to_message") and message.reply_to_message:
             reply = message.reply_to_message
-            if hasattr(reply, 'forum_topic_created') and reply.forum_topic_created:
+            if hasattr(reply, "forum_topic_created") and reply.forum_topic_created:
                 forum_topic = reply.forum_topic_created
-                custom_emoji_id = getattr(forum_topic, 'icon_custom_emoji_id', None)
+                custom_emoji_id = getattr(forum_topic, "icon_custom_emoji_id", None)
                 logger.info(f"Found custom emoji from reply: {custom_emoji_id}")
-                
+
         # Log if no emoji found
         if not custom_emoji_id:
             logger.warning("No custom emoji found in test message")
-            
+
         return custom_emoji_id
-    
+
     async def _delete_test_message(self, message: Message) -> None:
         """Delete test message from chat.
-        
+
         Args:
             message: Message to delete
         """
         try:
             await self.bot.delete_message(
-                chat_id=message.chat.id,
-                message_id=message.message_id
+                chat_id=message.chat.id, message_id=message.message_id
             )
             logger.debug(f"Deleted test message {message.message_id}")
         except Exception as e:
@@ -550,7 +558,9 @@ class ChatManager:
             user_id=message.from_user.id,
             message_id=message.message_id,
             topic_id=getattr(message, "message_thread_id", None),
-            reply_to_message_id=message.reply_to_message.message_id if message.reply_to_message else None,
+            reply_to_message_id=message.reply_to_message.message_id
+            if message.reply_to_message
+            else None,
         )
 
         # Analyze topic compliance
@@ -566,10 +576,11 @@ class ChatManager:
         )
 
         # Record violation if message is not appropriate
-        if not result.is_appropriate \
-           and result.suggested_topic \
-           and result.suggested_topic != current_topic:
-            
+        if (
+            not result.is_appropriate
+            and result.suggested_topic
+            and result.suggested_topic != current_topic
+        ):
             logger.info(
                 f"Topic violation detected: '{current_topic}' -> '{result.suggested_topic}'"
             )

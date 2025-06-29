@@ -10,28 +10,33 @@ from utils.logger import logger
 
 class Settings(BaseSettings):
     """Application settings with validation."""
-    
+
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=True,
-        extra="ignore"
+        env_file=".env", env_file_encoding="utf-8", case_sensitive=True, extra="ignore"
     )
-    
+
     # Telegram configuration
     TELEGRAM_BOT_TOKEN: str
-    
+
     # Superuser configuration
     SUPERUSER_ID: int
-    
+
     # LiteLLM configuration
     LITELLM_CONFIG_PATH: str = "litellm_models.yaml"
-    LITELLM_ROUTER_STRATEGY: str = "load_balance"  # Options: round_robin, priority, random, load_balance
-    
+    LITELLM_ROUTER_STRATEGY: str = (
+        "round_robin"  # Options: round_robin, priority, random, load_balance
+    )
+
     # Proxy configuration (optional)
-    HTTP_PROXY: str = ""
-    HTTPS_PROXY: str = ""
-    
+    AI_HTTP_PROXY: str = ""
+    AI_HTTPS_PROXY: str = ""
+
+    # ChromaDB configuration
+    CHROMA_EMBEDDING_MODEL: str = "ai-forever/FRIDA"
+    CHROMA_COLLECTION_NAME: str = "telegram_messages"
+    CHROMA_HOST: str = "localhost"
+    CHROMA_PORT: int = 8700
+
     # Optional configuration with defaults
     VIOLATION_TIME_WINDOW: int = 60
     VIOLATION_MAX_LENGTH: int = 10
@@ -39,7 +44,7 @@ class Settings(BaseSettings):
     MIN_MESSAGE_LENGTH: int = 10
     REACTION_EMOJI: str = "👾"
     RANDOM_REPLY_PROBABILITY: float = 0.03
-    
+
     # Static configuration - topics and reaction levels
     @property
     def chat_topics(self) -> Dict[str, str]:
@@ -61,23 +66,22 @@ class Settings(BaseSettings):
             Шмотки которые выпали в БП.
             """,
             "Билды": "Обсуждения и видео билдов",
-            "Записи игр": "Записи игр и скирншоты интересных партий"
-            
+            "Записи игр": "Записи игр и скирншоты интересных партий",
         }
-    
+
     @property
     def reaction_levels(self) -> Dict[int, str]:
         """Reaction intensity configuration."""
         return {
             1: "reaction_only",
-            2: "reaction_only", 
+            2: "reaction_only",
             3: "reaction_only",
             4: "reaction_only",
             5: "reaction_only",
             6: "reaction_only",
             7: "reaction_only",
         }
-    
+
     @property
     def analyze_keywords(self) -> List[str]:
         """Keywords for message analysis."""
@@ -86,7 +90,7 @@ class Settings(BaseSettings):
 
 # Create settings instance with validation
 try:
-    settings = Settings()
+    settings = Settings()  # type: ignore[call-arg]
     # Log configuration at startup
     logger.info("Configuration loaded successfully")
     logger.debug(f"MIN_MESSAGE_LENGTH: {settings.MIN_MESSAGE_LENGTH}")

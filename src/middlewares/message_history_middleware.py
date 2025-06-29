@@ -1,32 +1,35 @@
 from typing import Callable, Dict, Any, Awaitable
 
 from aiogram import BaseMiddleware
-from aiogram.types import Message
+from aiogram.types import Message, TelegramObject
 from loguru import logger
 
 
 class MessageHistoryMiddleware(BaseMiddleware):
     """Middleware для сохранения сообщений из групповых чатов в историю."""
-    
+
     async def __call__(
         self,
-        handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
-        event: Message,
-        data: Dict[str, Any]
+        handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
+        event: TelegramObject,
+        data: Dict[str, Any],
     ) -> Any:
         """Обработка входящего сообщения.
-        
+
         Args:
             handler: Следующий обработчик в цепочке
             event: Событие сообщения
             data: Дополнительные данные
-            
+
         Returns:
             Результат обработки
         """
+        if not isinstance(event, Message):
+            return await handler(event, data)
+
         # Получаем storage из dispatcher data
         storage = data.get("message_history_storage")
-        
+
         # Сохраняем только сообщения из групп и супергрупп
         if storage and event.chat.type in ["group", "supergroup"]:
             try:
@@ -37,6 +40,6 @@ class MessageHistoryMiddleware(BaseMiddleware):
                 )
             except Exception as e:
                 logger.error(f"Ошибка при сохранении сообщения в историю: {e}")
-        
+
         # Передаем управление следующему обработчику
         return await handler(event, data)

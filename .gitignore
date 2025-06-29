@@ -55,6 +55,7 @@ Thumbs.db
 # Logs and data
 logs/
 data/
+chroma/
 *.log
 
 # Database
@@ -75,3 +76,4 @@ htmlcov/
 pdm.lock
 litellm_models.yaml
 .claude/settings.local.json
+chroma/chroma_auth.txt

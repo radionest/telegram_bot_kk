@@ -32,10 +32,10 @@ async def set_group_command(
     logger.info(f"Command /set_group from superuser {message.from_user.id}")
 
     await send_group_selection_message(
-        bot=bot, 
-        chat_id=message.chat.id, 
-        chat_manager=chat_manager, 
-        group_tracker=group_tracker
+        bot=bot,
+        chat_id=message.chat.id,
+        chat_manager=chat_manager,
+        group_tracker=group_tracker,
     )
 
 
@@ -106,7 +106,7 @@ async def topics_command(message: Message, chat_manager: ChatManager) -> None:
         chat_manager: Chat manager instance
     """
 
-    logger.info(f"Command /topics from user {message.from_user.id}")
+    logger.info(f"Command /topics from user {message.from_user.id}")  # type: ignore
 
     topics_text = "📋 Доступные темы форума:\n\n"
     for topic in chat_manager.existing_topics.values():

@@ -12,7 +12,11 @@ dependencies = [
     "loguru>=0.7.2",
     "pydantic-settings",
     "litellm>=1.56.0",
-    "pyyaml>=6.0.1"
+    "pyyaml>=6.0.1",
+    "chromadb",
+    "sentence_transformers",
+    "torch",
+    "scikit-learn"
 ]
 requires-python = ">=3.12"
 readme = "README.md"
@@ -35,6 +39,7 @@ dev = [
     "flake8>=7.0.0",
     "mypy>=1.15.0",
     "types-aiofiles>=23.2.0",
+    "types-PyYAML",
 ]
 
 [tool.black]
